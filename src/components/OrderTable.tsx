@@ -113,6 +113,7 @@ export default function OrderTable() {
     fetchOrders();
   }, [fetchOrders]);
 
+
   // 存储的下拉选项（localStorage）
   const [storedOpts, setStoredOpts] = useState<Record<string, string[]>>(() => {
     try { return JSON.parse(localStorage.getItem("dropdownOptions") || "{}"); }
@@ -167,6 +168,24 @@ export default function OrderTable() {
   // 列筛选
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
+
+  // 同步左右两栏行高
+  useEffect(() => {
+    if (loading) return;
+    const timer = setTimeout(() => {
+      const lRows = document.querySelectorAll("#left-table tbody tr");
+      const rRows = document.querySelectorAll("#right-table tbody tr");
+      const n = Math.min(lRows.length, rRows.length);
+      for (let i = 0; i < n; i++) {
+        const lh = (lRows[i] as HTMLElement).getBoundingClientRect().height;
+        const rh = (rRows[i] as HTMLElement).getBoundingClientRect().height;
+        const mh = Math.max(lh, rh);
+        (lRows[i] as HTMLElement).style.height = mh + "px";
+        (rRows[i] as HTMLElement).style.height = mh + "px";
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [orders, loading, filters, searchQuery, showFilters, selectedIds]);
 
   const setFilter = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -440,7 +459,7 @@ export default function OrderTable() {
       <div className="flex overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)] border border-gray-300 rounded">
         {/* 冻结列：复选框 + 序号 + 客户名称 + 地区 + 货品名称 */}
         <div className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10">
-          <table className="border-collapse">
+          <table id="left-table" className="border-collapse">
             <thead>
               <tr>
                 <th className={HEADER_CLASS + " w-8"}>
@@ -508,7 +527,7 @@ export default function OrderTable() {
         </div>
         {/* 滚动列：产品状态 + 上游对接 + ... + 操作 */}
         <div className="flex-1 overflow-x-auto">
-          <table className="border-collapse min-w-max">
+          <table id="right-table" className="border-collapse min-w-max">
             <thead>
               <tr>
                 {scrollCols.map((col) => (
