@@ -175,17 +175,22 @@ export default function OrderTable() {
     const right = document.getElementById("right-panel");
     if (!left || !right) return;
 
-    // 行高同步
+    // 行高同步：取左右每对行的最大值，统一设置
     const syncHeights = () => {
       const lRows = left.querySelectorAll("tbody tr");
       const rRows = right.querySelectorAll("tbody tr");
       const n = Math.min(lRows.length, rRows.length);
       for (let i = 0; i < n; i++) {
-        const lh = (lRows[i] as HTMLElement).offsetHeight;
-        const rh = (rRows[i] as HTMLElement).offsetHeight;
+        const lTr = lRows[i] as HTMLElement;
+        const rTr = rRows[i] as HTMLElement;
+        const lh = lTr.getBoundingClientRect().height;
+        const rh = rTr.getBoundingClientRect().height;
         const mh = Math.max(lh, rh);
-        (lRows[i] as HTMLElement).style.height = mh + "px";
-        (rRows[i] as HTMLElement).style.height = mh + "px";
+        lTr.style.height = mh + "px";
+        rTr.style.height = mh + "px";
+        // 子 td 继承行高
+        lTr.querySelectorAll("td").forEach((td) => { (td as HTMLElement).style.height = mh + "px"; });
+        rTr.querySelectorAll("td").forEach((td) => { (td as HTMLElement).style.height = mh + "px"; });
       }
     };
 
