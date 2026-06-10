@@ -13,10 +13,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import type { Viewport } from "next";
+
+export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+
 export const metadata: Metadata = {
   title: "订单追踪系统",
   description: "客户销售订单智能表格",
-  viewport: { width: "device-width", initialScale: 1 },
 };
 
 export default function RootLayout({
