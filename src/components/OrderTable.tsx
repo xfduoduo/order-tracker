@@ -476,7 +476,7 @@ export default function OrderTable() {
                 const lastFrozen = col.key === "productName";
                 return (
                   <th key={col.key} className={`${HEADER_CLASS} ${isFrozen ? "sticky z-30 bg-gray-100" : ""} ${lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : ""}`}
-                    style={isFrozen ? {position:"sticky",left:col.key==="_index"?38:undefined,zIndex:30,transform:"translateZ(0)",boxShadow:"1px 0 0 0 #f1f5f9"} : {}}
+                    style={isFrozen ? {position:"sticky",left:col.key==="_index"?38:undefined,zIndex:30,transform:"translateZ(0)",boxShadow:"1px 0 0 0 #f9fafb"} : {}}
                     data-frozen={isFrozen ? "1" : undefined}
                     onClick={() => toggleSort(col.key)}>
                     {col.label}{sortKey === col.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
@@ -487,7 +487,7 @@ export default function OrderTable() {
             </tr>
             {showFilters && (
               <tr>
-                <th className="border border-gray-200 bg-gray-50 px-1 py-1 sticky left-0 z-30" style={{width:38,minWidth:38}} />
+                <th className="border border-gray-200 bg-gray-50 px-1 py-1 sticky left-0 z-30 border-r-0" style={{width:38,minWidth:38}} />
                 {COLUMNS.map((col) => {
                   const boolColsCheck = new Set(["priorityShipping", "isReturn"]);
                   const opts = dropdownValues[col.key];
@@ -495,7 +495,7 @@ export default function OrderTable() {
                   const lastFrozen = col.key === "productName";
                   return (
                     <th key={col.key} className={`border border-gray-200 bg-gray-50 px-1 py-1 ${isFrozen ? "sticky z-30 bg-gray-50" : ""} ${lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : ""}`}
-                      style={isFrozen ? {position:"sticky",left:col.key==="_index"?38:undefined,zIndex:30,transform:"translateZ(0)",boxShadow:"1px 0 0 0 #f1f5f9"} : {}}
+                      style={isFrozen ? {position:"sticky",left:col.key==="_index"?38:undefined,zIndex:30,transform:"translateZ(0)",boxShadow:"1px 0 0 0 #f9fafb"} : {}}
                       data-frozen={isFrozen ? "1" : undefined}>
                       {boolColsCheck.has(col.key) ? (
                         <select value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} className="w-full text-xs border rounded px-1 py-0.5">
