@@ -465,7 +465,7 @@ export default function OrderTable() {
       </div>
 
       <div className="overflow-auto max-h-[calc(100vh-200px)] border border-gray-300 rounded" id="main-scroll">
-        <table className="border-collapse" style={{borderSpacing:0}}>
+        <table style={{borderCollapse:"separate",borderSpacing:0}}>
           <thead>
             <tr>
               <th className={HEADER_CLASS + " sticky left-0 z-30 bg-gray-100 border-r-0"} style={{width:38,minWidth:38}}>
