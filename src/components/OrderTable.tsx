@@ -437,7 +437,7 @@ export default function OrderTable() {
         <span className="ml-auto text-xs text-gray-500">共 {filteredOrders.length} 条</span>
       </div>
 
-      <div className="flex overflow-hidden max-h-[calc(100vh-200px)] border border-gray-300 rounded">
+      <div className="flex overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)] border border-gray-300 rounded">
         {/* 冻结列：复选框 + 序号 + 客户名称 + 地区 + 货品名称 */}
         <div className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10">
           <table className="border-collapse">
