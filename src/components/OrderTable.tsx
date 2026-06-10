@@ -548,12 +548,12 @@ export default function OrderTable() {
                       if (colType === "number") return <td key={col.key} className={`${CELL_CLASS} text-right`}><EditableNumber value={Number(rawVal)} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
                       if (colType === "datetime" || colType === "date") return <td key={col.key} className={CELL_CLASS}><EditableDate value={String(rawVal ?? "")} type={colType} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
                       if (colType === "dropdown" && dropdownOpts?.size) return (
-                        <td key={col.key} className={`${CELL_CLASS} group ${frozenClass} ${shadowClass}`} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
+                        <td key={col.key} className={`${CELL_CLASS} group ${frozenClass} ${shadowClass}`} data-frozen={isFrozen ? "1" : undefined} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
                           <DropdownCell value={String(rawVal)} options={[...dropdownOpts]} color={cellBgColor} onSave={(v) => { updateCell(o.id, col.key, v); addDropdownOption(col.key, v); }} onRemoveOption={(v) => removeDropdownOption(col.key, v)} />
                         </td>
                       );
                       return (
-                        <td key={col.key} className={`${CELL_CLASS} ${frozenClass} ${shadowClass}`} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
+                        <td key={col.key} className={`${CELL_CLASS} ${frozenClass} ${shadowClass}`} data-frozen={isFrozen ? "1" : undefined} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
                           <PillTag color={cellBgColor}><EditableCell value={String(rawVal ?? "")} onSave={(v) => updateCell(o.id, col.key, v)} /></PillTag>
                         </td>
                       );
