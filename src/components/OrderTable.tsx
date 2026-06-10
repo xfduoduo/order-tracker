@@ -522,7 +522,7 @@ export default function OrderTable() {
               filteredOrders.map((o, rowIdx) => {
                 const custColor = nameToColor(String(o.customerName || ""));
                 const isEven = rowIdx % 2 === 1;
-                const isEvenBg = isEven ? "bg-white" : "bg-indigo-50/70";
+                const isEvenBg = isEven ? "bg-white" : "bg-indigo-50";
                 return (
                   <tr key={o.id} className={`${isEvenBg} hover:bg-indigo-100/60 transition-colors duration-150`}>
                     <td className={`${CELL_CLASS} text-center sticky left-0 ${isEvenBg} z-10`}>
