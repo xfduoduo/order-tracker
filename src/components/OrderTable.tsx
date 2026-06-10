@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from "react";
 import { fmtCNY } from "@/lib/utils";
 import { nameToColor } from "@/lib/color";
 import { exportCSV, exportExcel } from "@/lib/export";
@@ -168,8 +168,8 @@ export default function OrderTable() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // 同步左右两栏：行高 + 原生 scroll 事件绑定（更跟手）
-  useEffect(() => {
+  // 同步左右两栏：行高（绘制前）+ 原生 scroll 事件（跟手）
+  useLayoutEffect(() => {
     if (loading) return;
     const left = document.getElementById("left-panel");
     const right = document.getElementById("right-panel");
