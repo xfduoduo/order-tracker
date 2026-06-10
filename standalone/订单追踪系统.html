@@ -213,5 +213,5 @@ function showTable(){
 
 document.getElementById('ntab').onclick=function(e){e.preventDefault();showTable()};
 document.getElementById('ndsh').onclick=function(e){e.preventDefault();showDash()};
-si=new Set();console.log('订单追踪系统 v2 已就绪, '+O.length+' 条订单');RENDER();
+si=new Set();if(si.size>0)si.clear();console.log('订单追踪系统 v3 已就绪, '+O.length+' 条订单');RENDER();
 </script></body></html>
