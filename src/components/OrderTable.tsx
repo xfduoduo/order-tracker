@@ -113,25 +113,6 @@ export default function OrderTable() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // 同步左右两栏行高（解决不同列数导致的行高不一致）
-  useEffect(() => {
-    if (loading) return;
-    const id = requestAnimationFrame(() => {
-      const leftRows = document.querySelectorAll("#left-panel tbody tr");
-      const rightRows = document.querySelectorAll("#right-panel tbody tr");
-      const n = Math.min(leftRows.length, rightRows.length);
-      if (n === 0) return;
-      for (let i = 0; i < n; i++) {
-        const lh = (leftRows[i] as HTMLElement).offsetHeight;
-        const rh = (rightRows[i] as HTMLElement).offsetHeight;
-        const mh = Math.max(lh, rh);
-        (leftRows[i] as HTMLElement).style.height = mh + "px";
-        (rightRows[i] as HTMLElement).style.height = mh + "px";
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [orders, loading, showFilters, filters, searchQuery]);
-
   // 存储的下拉选项（localStorage）
   const [storedOpts, setStoredOpts] = useState<Record<string, string[]>>(() => {
     try { return JSON.parse(localStorage.getItem("dropdownOptions") || "{}"); }
@@ -186,6 +167,25 @@ export default function OrderTable() {
   // 列筛选
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
+
+  // 同步左右两栏行高
+  useEffect(() => {
+    if (loading) return;
+    const id = requestAnimationFrame(() => {
+      const leftRows = document.querySelectorAll("#left-panel tbody tr");
+      const rightRows = document.querySelectorAll("#right-panel tbody tr");
+      const n = Math.min(leftRows.length, rightRows.length);
+      if (n === 0) return;
+      for (let i = 0; i < n; i++) {
+        const lh = (leftRows[i] as HTMLElement).offsetHeight;
+        const rh = (rightRows[i] as HTMLElement).offsetHeight;
+        const mh = Math.max(lh, rh);
+        (leftRows[i] as HTMLElement).style.height = mh + "px";
+        (rightRows[i] as HTMLElement).style.height = mh + "px";
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [orders, loading, showFilters, filters, searchQuery]);
 
   const setFilter = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
