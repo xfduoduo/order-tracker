@@ -58,8 +58,6 @@ interface ApiResponse<T> {
 
 // ── 冻结列 ──
 const FROZEN_KEYS = ["_index", "customerName", "customerRegion", "productName"];
-const frozenCols = COLUMNS.filter((c) => FROZEN_KEYS.includes(c.key));
-const scrollCols = COLUMNS.filter((c) => !FROZEN_KEYS.includes(c.key));
 
 // ── 样式 ──
 const CELL_CLASS = "border border-gray-200 px-2 py-1 text-sm text-gray-900 font-medium";
@@ -168,50 +166,33 @@ export default function OrderTable() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // 同步左右两栏：行高（绘制前）+ 原生 scroll 事件（跟手）
+  // 计算冻结列 left 偏移（按DOM顺序累加宽度）
   useLayoutEffect(() => {
     if (loading) return;
-    const left = document.getElementById("left-panel");
-    const right = document.getElementById("right-panel");
-    if (!left || !right) return;
-
-    // 行高同步：取左右每对行的最大值，统一设置
-    const syncHeights = () => {
-      const lRows = left.querySelectorAll("tbody tr");
-      const rRows = right.querySelectorAll("tbody tr");
-      const n = Math.min(lRows.length, rRows.length);
-      for (let i = 0; i < n; i++) {
-        const lTr = lRows[i] as HTMLElement;
-        const rTr = rRows[i] as HTMLElement;
-        const lh = lTr.getBoundingClientRect().height;
-        const rh = rTr.getBoundingClientRect().height;
-        const mh = Math.max(lh, rh);
-        lTr.style.height = mh + "px";
-        rTr.style.height = mh + "px";
-        // 子 td 继承行高
-        lTr.querySelectorAll("td").forEach((td) => { (td as HTMLElement).style.height = mh + "px"; });
-        rTr.querySelectorAll("td").forEach((td) => { (td as HTMLElement).style.height = mh + "px"; });
-      }
+    const container = document.getElementById("main-scroll");
+    if (!container) return;
+    // 测量第一行每个冻结 th 的宽度，计算累积偏移
+    const frozenThs = container.querySelectorAll("th[data-frozen]");
+    const offsets: number[] = [];
+    let left = 36; // checkbox 宽度
+    frozenThs.forEach((th) => {
+      offsets.push(left);
+      left += (th as HTMLElement).offsetWidth;
+    });
+    // 应用到所有行
+    const apply = (sel: string) => {
+      const all = container.querySelectorAll(sel);
+      // 每行的冻结列数量相同，按位置匹配
+      let colIdx = 0;
+      const perRow = offsets.length;
+      all.forEach((el) => {
+        const offset = offsets[colIdx % perRow];
+        (el as HTMLElement).style.left = offset + "px";
+        colIdx++;
+      });
     };
-
-    // 原生 scroll 同步（比 React onScroll 更快）
-    const onScroll = () => { left.scrollTop = right.scrollTop; };
-    right.addEventListener("scroll", onScroll, { passive: true });
-    // 同步表头高度（消除初始偏移）
-    const lThead = left.querySelector("thead");
-    const rThead = right.querySelector("thead");
-    if (lThead && rThead) {
-      const lh = lThead.getBoundingClientRect().height;
-      const rh = rThead.getBoundingClientRect().height;
-      const mh = Math.max(lh, rh);
-      (lThead as HTMLElement).style.height = mh + "px";
-      (rThead as HTMLElement).style.height = mh + "px";
-    }
-    syncHeights();
-
-    return () => {
-      right.removeEventListener("scroll", onScroll);
-    };
+    apply("th[data-frozen]");
+    apply("td[data-frozen]");
   }, [orders, loading, showFilters, filters, searchQuery]);
 
   const setFilter = (key: string, value: string) => {
@@ -483,185 +464,112 @@ export default function OrderTable() {
         <span className="ml-auto text-xs text-gray-500">共 {filteredOrders.length} 条</span>
       </div>
 
-      <div className="flex max-h-[calc(100vh-200px)] border border-gray-300 rounded">
-        {/* 冻结列：复选框 + 序号 + 客户名称 + 地区 + 货品名称 */}
-        <div id="left-panel" className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10 overflow-hidden" onWheel={(e) => {
-          const right = document.getElementById("right-panel");
-          if (right) right.scrollTop += e.deltaY;
-        }}>
-          <table id="left-table" className="border-collapse">
-            <thead>
-              <tr>
-                <th className={HEADER_CLASS + " w-8"}>
-                  <input type="checkbox" checked={selectedIds.size === filteredOrders.length && filteredOrders.length > 0} onChange={toggleSelectAll} className="h-4 w-4" />
-                </th>
-                {frozenCols.map((col) => (
-                  <th key={col.key} className={HEADER_CLASS} onClick={() => toggleSort(col.key)}>
-                    {col.label}
+      <div className="overflow-auto max-h-[calc(100vh-200px)] border border-gray-300 rounded" id="main-scroll">
+        <table className="border-collapse">
+          <thead>
+            <tr>
+              <th className={HEADER_CLASS + " sticky left-0 z-30 bg-gray-100"} style={{width:36,minWidth:36}}>
+                <input type="checkbox" checked={selectedIds.size === filteredOrders.length && filteredOrders.length > 0} onChange={toggleSelectAll} className="h-4 w-4" />
+              </th>
+              {COLUMNS.map((col) => {
+                const isFrozen = FROZEN_KEYS.includes(col.key) || col.key === "_index";
+                const lastFrozen = col.key === "productName";
+                return (
+                  <th key={col.key} className={`${HEADER_CLASS} ${isFrozen ? "sticky z-30 bg-gray-100" : ""} ${lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : ""}`}
+                    style={isFrozen ? {position:"sticky",zIndex:30} : {}}
+                    data-frozen={isFrozen ? "1" : undefined}
+                    onClick={() => toggleSort(col.key)}>
+                    {col.label}{sortKey === col.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
                   </th>
-                ))}
-              </tr>
-              {showFilters && (
-                <tr>
-                  <th className="border border-gray-200 bg-gray-50 px-1 py-1" />
-                  {frozenCols.map((col) => { const opts = dropdownValues[col.key]; return (
-                    <th key={col.key} className="border border-gray-200 bg-gray-50 px-1 py-1">
-                      {opts?.size ? (
+                );
+              })}
+              <th className={HEADER_CLASS}>操作</th>
+            </tr>
+            {showFilters && (
+              <tr>
+                <th className="border border-gray-200 bg-gray-50 px-1 py-1 sticky left-0 z-30" style={{width:36,minWidth:36}} />
+                {COLUMNS.map((col) => {
+                  const boolColsCheck = new Set(["priorityShipping", "isReturn"]);
+                  const opts = dropdownValues[col.key];
+                  const isFrozen = FROZEN_KEYS.includes(col.key) || col.key === "_index";
+                  const lastFrozen = col.key === "productName";
+                  return (
+                    <th key={col.key} className={`border border-gray-200 bg-gray-50 px-1 py-1 ${isFrozen ? "sticky z-30 bg-gray-50" : ""} ${lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : ""}`}
+                      style={isFrozen ? {position:"sticky",zIndex:30} : {}}
+                      data-frozen={isFrozen ? "1" : undefined}>
+                      {boolColsCheck.has(col.key) ? (
+                        <select value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} className="w-full text-xs border rounded px-1 py-0.5">
+                          <option value="">全部</option><option value="是">是</option><option value="否">否</option>
+                        </select>
+                      ) : opts?.size ? (
                         <select value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} className="w-full text-xs border rounded px-1 py-0.5" style={{minWidth:60}}>
-                          <option value="">全部</option>
-                          {[...opts].map((o) => <option key={o} value={o}>{o}</option>)}
+                          <option value="">全部</option>{[...opts].map((o) => <option key={o} value={o}>{o}</option>)}
                         </select>
                       ) : (
                         <input value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} placeholder="筛选..." className="w-full text-xs border rounded px-1 py-0.5" style={{minWidth:60}} />
                       )}
                     </th>
-                  )})}
-                </tr>
-              )}
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
-                <tr><td colSpan={frozenCols.length + 1} className="text-center text-gray-400 py-8 text-sm">暂无</td></tr>
-              ) : (
-                filteredOrders.map((o, rowIdx) => {
-                  const custColor = nameToColor(String(o.customerName || ""));
-                  const isEven = rowIdx % 2 === 1;
-                  return (
-                    <tr key={o.id} className={`${isEven ? "bg-white" : "bg-indigo-50/70"} hover:bg-indigo-100/60 transition-colors duration-150`}>
-                      <td className={`${CELL_CLASS} text-center`}>
-                        <input type="checkbox" checked={selectedIds.has(o.id)} onChange={() => toggleSelect(o.id)} className="h-4 w-4" />
-                      </td>
-                      {frozenCols.map((col) => {
-                        const rawVal = o[col.key];
-                        const colType = col.type;
-                        const dropdownOpts = dropdownValues[col.key];
-                        const cellBgColor = col.key === "customerName" ? custColor : (colType === "dropdown" && rawVal) ? nameToColor(String(rawVal)) : "transparent";
-                        if (col.key === "_index") return <td key={col.key} className={`${CELL_CLASS} text-center text-gray-400 text-xs font-mono`}>{rowIdx + 1}</td>;
-                        if (colType === "dropdown" && dropdownOpts?.size) return (
-                          <td key={col.key} className={`${CELL_CLASS} group`}>
-                            <DropdownCell value={String(rawVal)} options={[...dropdownOpts]} color={cellBgColor} onSave={(v) => { updateCell(o.id, col.key, v); addDropdownOption(col.key, v); }} onRemoveOption={(v) => removeDropdownOption(col.key, v)} />
-                          </td>
-                        );
-                        return (
-                          <td key={col.key} className={CELL_CLASS}>
-                            <PillTag color={cellBgColor}><EditableCell value={String(rawVal ?? "")} onSave={(v) => updateCell(o.id, col.key, v)} /></PillTag>
-                          </td>
-                        );
-                      })}
-                    </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        {/* 滚动列：产品状态 + 上游对接 + ... + 操作 */}
-        <div id="right-panel" className="flex-1 overflow-auto" onScroll={(e) => {
-          const left = document.getElementById("left-panel");
-          if (left) left.scrollTop = (e.target as HTMLElement).scrollTop;
-        }}>
-          <table id="right-table" className="border-collapse min-w-max">
-            <thead>
-              <tr>
-                {scrollCols.map((col) => (
-                  <th key={col.key} className={HEADER_CLASS} onClick={() => toggleSort(col.key)}>
-                    {col.label}{sortKey === col.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
-                  </th>
-                ))}
-                <th className={HEADER_CLASS}>操作</th>
+                })}
+                <th className="border border-gray-200 bg-gray-50 px-1 py-1" />
               </tr>
-              {showFilters && (
-                <tr>
-                  {scrollCols.map((col) => {
-                    const boolColsCheck = new Set(["priorityShipping", "isReturn"]);
-                    if (boolColsCheck.has(col.key)) return (
-                      <th key={col.key} className="border border-gray-200 bg-gray-50 px-1 py-1">
-                        <select value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} className="w-full text-xs border rounded px-1 py-0.5">
-                          <option value="">全部</option><option value="是">是</option><option value="否">否</option>
-                        </select>
-                      </th>
-                    );
-                    const opts = dropdownValues[col.key];
-                    if (opts?.size) return (
-                      <th key={col.key} className="border border-gray-200 bg-gray-50 px-1 py-1">
-                        <select value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} className="w-full text-xs border rounded px-1 py-0.5" style={{minWidth:60}}>
-                          <option value="">全部</option>
-                          {[...opts].map((o) => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                      </th>
-                    );
-                    return (
-                      <th key={col.key} className="border border-gray-200 bg-gray-50 px-1 py-1">
-                        <input value={filters[col.key] || ""} onChange={(e) => setFilter(col.key, e.target.value)} placeholder="筛选..." className="w-full text-xs border rounded px-1 py-0.5" style={{minWidth:60}} />
-                      </th>
-                    );
-                  })}
-                  <th className="border border-gray-200 bg-gray-50 px-1 py-1" />
-                </tr>
-              )}
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
-                <tr><td colSpan={scrollCols.length + 1} className="text-center text-gray-400 py-8 text-sm">暂无数据</td></tr>
-              ) : (
-                filteredOrders.map((o, rowIdx) => {
-                  const isEven = rowIdx % 2 === 1;
-                  return (
-                    <tr key={o.id} className={`${isEven ? "bg-white" : "bg-indigo-50/70"} hover:bg-indigo-100/60 transition-colors duration-150`}>
-                      {scrollCols.map((col) => {
-                        const rawVal = o[col.key];
-                        const colType = col.type;
-                        const dropdownOpts = dropdownValues[col.key];
-                        const cellBgColor = (colType === "dropdown" && rawVal) ? nameToColor(String(rawVal)) : "transparent";
-                        if (colType === "checkbox") return (
-                          <td key={col.key} className={`${CELL_CLASS} text-center`}>
-                            <input type="checkbox" checked={!!rawVal} onChange={(e) => {
-                              if (col.key === "isReturn") { handleReturnToggle(o.id, e.target.checked); }
-                              else if (col.key === "priorityShipping") {
-                                const tag = "优先发货顺丰加20";
-                                const oldRemark = String(o.remark || "");
-                                const checked = e.target.checked;
-                                const newRemark = checked
-                                  ? (oldRemark.includes(tag) ? oldRemark : oldRemark ? oldRemark + "；" + tag : tag)
-                                  : oldRemark.replace("；" + tag, "").replace(tag, "").trim().replace(/^；|；$/g, "");
-                                const pseq = ++reqSeq.current;
-                                setOrders((prev) => prev.map((x) => x.id === o.id ? { ...x, priorityShipping: checked, remark: newRemark } : x));
-                                fetch(`/api/orders/${o.id}`, {
-                                  method: "PUT", headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ priorityShipping: checked, remark: newRemark }),
-                                }).then((r) => r.json()).then((json) => {
-                                  if (json.success && json.data && pseq === reqSeq.current) setOrders((prev) => prev.map((x) => x.id === o.id ? json.data! : x));
-                                });
-                              }
-                            }} className="h-4 w-4" />
-                          </td>
-                        );
-                        if (colType === "readonly" && (col.key === "profit" || col.key === "returnProfit")) {
-                          const isGreen = col.key === "profit" && Number(rawVal) >= 0;
-                          const isRed = col.key === "profit" && Number(rawVal) < 0;
-                          return <td key={col.key} className={`${CELL_CLASS} text-right font-mono text-sm select-text ${isGreen ? "text-green-700 font-bold" : isRed ? "text-red-500 font-bold" : "text-gray-500"}`}>{fmtCNY(Number(rawVal))}</td>;
-                        }
-                        if (colType === "number") return <td key={col.key} className={`${CELL_CLASS} text-right`}><EditableNumber value={Number(rawVal)} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
-                        if (colType === "datetime" || colType === "date") return <td key={col.key} className={CELL_CLASS}><EditableDate value={String(rawVal ?? "")} type={colType} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
-                        if (colType === "dropdown" && dropdownOpts?.size) return (
-                          <td key={col.key} className={`${CELL_CLASS} group`}>
-                            <DropdownCell value={String(rawVal)} options={[...dropdownOpts]} color={cellBgColor} onSave={(v) => { updateCell(o.id, col.key, v); addDropdownOption(col.key, v); }} onRemoveOption={(v) => removeDropdownOption(col.key, v)} />
-                          </td>
-                        );
-                        return <td key={col.key} className={CELL_CLASS}><PillTag color={cellBgColor}><EditableCell value={String(rawVal ?? "")} onSave={(v) => updateCell(o.id, col.key, v)} /></PillTag></td>;
-                      })}
-                      <td className={`${CELL_CLASS} text-center`}><button onClick={() => deleteRow(o.id)} className="text-red-500 hover:text-red-700 text-xs">🗑</button></td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+            )}
+          </thead>
+          <tbody>
+            {filteredOrders.length === 0 ? (
+              <tr><td colSpan={COLUMNS.length + 2} className="text-center text-gray-400 py-8 text-sm">暂无数据，点击"新增行"开始</td></tr>
+            ) : (
+              filteredOrders.map((o, rowIdx) => {
+                const custColor = nameToColor(String(o.customerName || ""));
+                const isEven = rowIdx % 2 === 1;
+                const isEvenBg = isEven ? "bg-white" : "bg-indigo-50/70";
+                return (
+                  <tr key={o.id} className={`${isEvenBg} hover:bg-indigo-100/60 transition-colors duration-150`}>
+                    <td className={`${CELL_CLASS} text-center sticky left-0 ${isEvenBg} z-10`}>
+                      <input type="checkbox" checked={selectedIds.has(o.id)} onChange={() => toggleSelect(o.id)} className="h-4 w-4" />
+                    </td>
+                    {COLUMNS.map((col) => {
+                      const rawVal = o[col.key];
+                      const colType = col.type;
+                      const dropdownOpts = dropdownValues[col.key];
+                      const isFrozen = FROZEN_KEYS.includes(col.key) || col.key === "_index";
+                      const lastFrozen = col.key === "productName";
+                      const isCustomerName = col.key === "customerName";
+                      const isDropdownCol = colType === "dropdown";
+                      const cellBgColor = isCustomerName ? custColor : (isDropdownCol && rawVal) ? nameToColor(String(rawVal)) : "transparent";
+                      const frozenClass = isFrozen ? `sticky ${isEvenBg} z-10` : "";
+                      const shadowClass = lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : "";
+                      if (col.key === "_index") return <td key={col.key} className={`${CELL_CLASS} text-center text-gray-400 text-xs font-mono sticky ${isEvenBg} z-10`} style={{position:"sticky",zIndex:10}}>{rowIdx + 1}</td>;
+                      if (colType === "checkbox") return <td key={col.key} className={`${CELL_CLASS} text-center`}><input type="checkbox" checked={!!rawVal} onChange={(e) => { if (col.key === "isReturn") handleReturnToggle(o.id, e.target.checked); else { const tag = "优先发货顺丰加20"; const oldRemark = String(o.remark || ""); const c = e.target.checked; const nr = c ? (oldRemark.includes(tag) ? oldRemark : oldRemark ? oldRemark + "；" + tag : tag) : oldRemark.replace("；" + tag, "").replace(tag, "").trim().replace(/^；|；$/g, ""); const ps = ++reqSeq.current; setOrders((prev) => prev.map((x) => x.id === o.id ? { ...x, priorityShipping: c, remark: nr } : x)); fetch(`/api/orders/${o.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ priorityShipping: c, remark: nr }) }).then((r) => r.json()).then((json) => { if (json.success && json.data && ps === reqSeq.current) setOrders((prev) => prev.map((x) => x.id === o.id ? json.data! : x)); }); } }} className="h-4 w-4" /></td>;
+                      if (colType === "readonly" && (col.key === "profit" || col.key === "returnProfit")) {
+                        const isGreen = col.key === "profit" && Number(rawVal) >= 0, isRed = col.key === "profit" && Number(rawVal) < 0;
+                        return <td key={col.key} className={`${CELL_CLASS} text-right font-mono text-sm ${isGreen ? "text-green-700 font-bold" : isRed ? "text-red-500 font-bold" : "text-gray-500"}`}>{fmtCNY(Number(rawVal))}</td>;
+                      }
+                      if (colType === "number") return <td key={col.key} className={`${CELL_CLASS} text-right`}><EditableNumber value={Number(rawVal)} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
+                      if (colType === "datetime" || colType === "date") return <td key={col.key} className={CELL_CLASS}><EditableDate value={String(rawVal ?? "")} type={colType} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
+                      if (colType === "dropdown" && dropdownOpts?.size) return (
+                        <td key={col.key} className={`${CELL_CLASS} group ${frozenClass} ${shadowClass}`} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
+                          <DropdownCell value={String(rawVal)} options={[...dropdownOpts]} color={cellBgColor} onSave={(v) => { updateCell(o.id, col.key, v); addDropdownOption(col.key, v); }} onRemoveOption={(v) => removeDropdownOption(col.key, v)} />
+                        </td>
+                      );
+                      return (
+                        <td key={col.key} className={`${CELL_CLASS} ${frozenClass} ${shadowClass}`} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
+                          <PillTag color={cellBgColor}><EditableCell value={String(rawVal ?? "")} onSave={(v) => updateCell(o.id, col.key, v)} /></PillTag>
+                        </td>
+                      );
+                    })}
+                    <td className={`${CELL_CLASS} text-center`}><button onClick={() => deleteRow(o.id)} className="text-red-500 hover:text-red-700 text-xs">🗑</button></td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
+
 
 // ── 可编辑文本单元格 ──
 function EditableCell({
