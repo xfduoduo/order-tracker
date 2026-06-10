@@ -458,7 +458,10 @@ export default function OrderTable() {
 
       <div className="flex max-h-[calc(100vh-200px)] border border-gray-300 rounded">
         {/* 冻结列：复选框 + 序号 + 客户名称 + 地区 + 货品名称 */}
-        <div id="left-panel" className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10 overflow-hidden">
+        <div id="left-panel" className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10 overflow-hidden" onWheel={(e) => {
+          const right = document.getElementById("right-panel");
+          if (right) right.scrollTop += e.deltaY;
+        }}>
           <table id="left-table" className="border-collapse">
             <thead>
               <tr>
