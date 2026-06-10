@@ -96,6 +96,7 @@ function BTN(txt,cls,fn){var b=Make('button',cls);T(b,txt);b.onclick=fn;return b
 function RENDER(){
   RenderToolbar();
   RenderTable();
+  setTimeout(function(){var r=document.getElementById("right"),l=document.getElementById("left");if(!r||!l)return;l.scrollTop=r.scrollTop;var lr=l.querySelectorAll("tbody tr"),rr=r.querySelectorAll("tbody tr"),n=Math.min(lr.length,rr.length);for(var i=0;i<n;i++){var m=Math.max(lr[i].offsetHeight,rr[i].offsetHeight);lr[i].style.height=m+"px";rr[i].style.height=m+"px";}},100);
 }
 
 function RenderToolbar(){
