@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Order {
+  id                String   @id @default(cuid())
+  // 客户信息
+  customerName      String   @map("customer_name")
+  customerRegion    String   @default("") @map("customer_region")
+  customerAddress   String   @default("") @map("customer_address")
+  // 货品信息
+  productName       String   @map("product_name")
+  productStatus     String   @default("") @map("product_status")
+  upstreamContact   String   @default("") @map("upstream_contact")
+  priorityShipping  Boolean  @default(false) @map("priority_shipping")
+  isReturn          Boolean  @default(false) @map("is_return")
+  salesStatus       String   @default("") @map("sales_status")
+  // 金额信息
+  purchasePrice     Float    @default(0) @map("purchase_price")
+  sellingPrice      Float    @default(0) @map("selling_price")
+  actualPayment     Float    @default(0) @map("actual_payment")
+  packagingShipping Float    @default(0) @map("packaging_shipping")
+  // 退货信息
+  returnPurchasePrice   Float @default(0) @map("return_purchase_price")
+  returnSellingPrice    Float @default(0) @map("return_selling_price")
+  actualRefund          Float @default(0) @map("actual_refund")
+  returnPackagingCost   Float @default(0) @map("return_packaging_cost")
+  returnProfit          Float @default(0) @map("return_profit")
+  profit                Float @default(0)
+  // 粉丝福利
+  ironFanBenefit    String   @default("") @map("iron_fan_benefit")
+  diamondFanBenefit String   @default("") @map("diamond_fan_benefit")
+  loyalFanBenefit   String   @default("") @map("loyal_fan_benefit")
+  superFanBenefit   String   @default("") @map("super_fan_benefit")
+  // 日期与备注
+  startDate         String   @default("") @map("start_date")
+  completionDate    String   @default("") @map("completion_date")
+  remark            String   @default("")
+  // 时间戳
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>订单追踪系统</title>
+<meta http-equiv="Cache-Control" content="no-cache"><script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" async onload="console.log('XLSX ready')" onerror="console.warn('XLSX CDN unavailable, import/export disabled')"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f8fafc;color:#1e293b}
+nav{background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 20px;display:flex;align-items:center;gap:20px;box-shadow:0 1px 3px #0000000a;position:sticky;top:0;z-index:100}
+nav a{text-decoration:none;font-size:14px;color:#64748b;font-weight:500;cursor:pointer;padding:4px 0;border-bottom:2px solid transparent}
+nav a:hover,nav a.on{color:#4f46e5;border-bottom-color:#4f46e5}
+nav .brand{font-weight:700;font-size:17px;color:#1e293b;margin-right:auto}
+main{padding:16px}
+.hide{display:none!important}
+#tbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+#tbar input[type=text]{border:1px solid #d1d5db;border-radius:8px;padding:6px 12px;font-size:13px;width:220px;outline:none}
+#tbar input[type=text]:focus{box-shadow:0 0 0 3px #4f46e526;border-color:#6366f1}
+#tbar button,#tbar select{border:1px solid #d1d5db;border-radius:8px;padding:6px 12px;font-size:12px;background:#fff;color:#475569;cursor:pointer;font-weight:500;white-space:nowrap}
+#tbar button:hover{background:#f1f5f9}
+#tbar button.blue{background:#4f46e5;color:#fff;border-color:#4f46e5}
+#tbar button.blue:hover{background:#4338ca}
+#tbar button.red{color:#ef4444;border-color:#fecaca}
+#tbar button.red:hover{background:#fef2f2}
+#tbar .cnt{font-size:12px;color:#94a3b8;margin-left:auto}
+#twrap{display:flex;overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 135px);border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+#left{flex-shrink:0;overflow:hidden;border-right:2px solid #e2e8f0;box-shadow:3px 0 8px #0000000f;z-index:10}
+#right{flex:1;overflow-x:auto;overflow-y:hidden}
+table{border-collapse:collapse}
+th{background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:6px 10px;font-size:11px;font-weight:600;color:#64748b;white-space:nowrap;cursor:pointer;position:sticky;top:0;z-index:5}
+th:hover{color:#4f46e5}
+td{border-bottom:1px solid #f1f5f9;padding:4px 8px;font-size:13px;max-width:140px;height:32px;vertical-align:middle}
+tr.z td{background:#eef2ff}
+tr:hover td{background:#e0e7ff!important}
+td input[type=text],td input[type=number]{width:100%;min-width:60px;border:1px solid #6366f1;border-radius:4px;padding:2px 4px;font-size:13px;outline:none}
+td input[type=checkbox]{width:15px;height:15px;cursor:pointer;margin:0}
+.pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:13px;font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;user-select:text}
+.pdp{position:relative;display:inline-flex;align-items:center}
+.pdp .arr{font-size:10px;color:#94a3b8;margin-left:1px;cursor:pointer;display:none}
+tr:hover .pdp .arr{display:inline}
+.pop{position:absolute;z-index:50;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px #0000001f;min-width:160px;left:0;top:100%}
+.pop input{border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:12px;width:calc(100% - 16px);margin:8px;outline:none}
+.pop input:focus{border-color:#6366f1}
+.pop .lst{max-height:180px;overflow-y:auto}
+.pop .lst>div{padding:6px 12px;font-size:13px;cursor:pointer}
+.pop .lst>div:hover{background:#eef2ff;color:#4338ca}
+.ovl{position:fixed;inset:0;z-index:40}
+.g{color:#059669;font-weight:700}.r{color:#dc2626;font-weight:700}.mono{font-family:monospace;font-size:12px}.tr{text-align:right}.tc{text-align:center}.gr{color:#94a3b8;font-size:12px}
+.dh1{font-size:22px;margin-bottom:16px}
+.dkp{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.dkc{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;transition:all .2s;cursor:default}
+.dkc:hover{box-shadow:0 6px 20px #00000014;transform:translateY(-1px)}
+.dkc .lbl{font-size:11px;color:#94a3b8;font-weight:500;margin-bottom:2px}
+.dkc .val{font-size:16px;font-weight:700;font-family:monospace}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:768px){.dg{grid-template-columns:1fr}}
+.dc{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;transition:box-shadow .2s}
+.dc:hover{box-shadow:0 4px 16px #0000000f}
+.dc h3{font-size:14px;font-weight:600;color:#475569;margin-bottom:16px}
+.br{margin-bottom:10px}.brl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;color:#64748b}
+.brt{height:22px;background:#f1f5f9;border-radius:8px;overflow:hidden}
+.brf{height:100%;border-radius:8px;background:linear-gradient(90deg,#818cf8,#6366f1);transition:width .5s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
+.brf span{color:#fff;font-size:10px;font-weight:600}
+.psi{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;font-size:13px}
+.psi:hover{background:#fef9c3}.psi:nth-child(even){background:#fffbeb}.psi:nth-child(even):hover{background:#fef9c3}
+.emp{text-align:center;color:#94a3b8;padding:40px;font-size:14px}
+</style></head><body>
+<nav><span class="brand">📊 订单追踪</span><a href="#" class="on" id="ntab">订单表格</a><a href="#" id="ndsh">仪表盘</a></nav>
+<main>
+<div id="vp"><div id="tbar"></div><div id="twrap"></div></div>
+<div id="vd" class="hide"><div id="dash"></div></div>
+</main>
+<script>
+var K='ot', O=JSON.parse(localStorage.getItem(K)||'[]'), sk=null,sd='asc',ft={},sq='',si=new Set(),sf=false;
+function S(){localStorage.setItem(K,JSON.stringify(O))}
+function C(v){return'¥'+(v||0).toFixed(2)}
+function H(s){if(!s)return'';var h=0;for(var i=0;i<s.length;i++){h=s.charCodeAt(i)+((h<<5)-h)}h=Math.abs(h)%360;var a=.4*Math.min(.92,1-.92),k,n,cl,l=.92;function f(n){k=(n+h/30)%12;return Math.round(255*(l-a*Math.max(Math.min(k-3,9-k,1),-1))).toString(16).padStart(2,'0')}return'#'+f(0)+f(8)+f(4)}
+function P(o){return o.actualPayment-o.purchasePrice-o.packagingShipping}
+function RP(o){return o.actualRefund-o.returnPurchasePrice-o.returnPackagingCost}
+var CS=[{k:'customerName',l:'客户名称',t:'d'},{k:'customerRegion',l:'地区',t:'d'},{k:'productName',l:'货品名称',t:'d'},{k:'productStatus',l:'货品状态',t:'d'},{k:'upstreamContact',l:'上游对接',t:'d'},{k:'priorityShipping',l:'优先发货',t:'c'},{k:'isReturn',l:'是否退货',t:'c'},{k:'salesStatus',l:'售卖状态',t:'d'},{k:'packagingShipping',l:'包装快递费',t:'n'},{k:'purchasePrice',l:'进价',t:'n'},{k:'sellingPrice',l:'卖价',t:'n'},{k:'actualPayment',l:'实付',t:'n'},{k:'returnPackagingCost',l:'退货包装成本费',t:'n'},{k:'returnPurchasePrice',l:'退货进价',t:'n'},{k:'returnSellingPrice',l:'退货卖价',t:'n'},{k:'actualRefund',l:'实退',t:'n'},{k:'returnProfit',l:'实退利润',t:'ro'},{k:'profit',l:'利润',t:'ro'},{k:'customerAddress',l:'地址',t:'x'},{k:'remark',l:'备注',t:'x'},{k:'ironFanBenefit',l:'铁粉福利',t:'d'},{k:'diamondFanBenefit',l:'钻粉福利',t:'d'},{k:'loyalFanBenefit',l:'挚爱粉福利',t:'d'},{k:'superFanBenefit',l:'超粉福利',t:'d'},{k:'startDate',l:'开始日期',t:'dt'},{k:'completionDate',l:'完成日期',t:'x'}];
+var FZ=['customerName','customerRegion','productName'];
+var FC=[{k:'_idx',l:'序号',t:'ro'}].concat(CS.filter(function(c){return FZ.indexOf(c.k)>=0}));
+var SC=CS.filter(function(c){return FZ.indexOf(c.k)<0});
+
+function FL(){
+  var r=O.slice();
+  if(sk){r.sort(function(a,b){var av=a[sk],bv=b[sk];return typeof av=='number'?av-bv:String(av).localeCompare(String(bv),'zh')});if(sd==='desc')r.reverse()}
+  for(var k in ft){if(ft[k])r=r.filter(function(o){return String(o[k]||'').indexOf(ft[k])>=0})}
+  if(sq){var q=sq.toLowerCase();r=r.filter(function(o){return(o.customerName||'').toLowerCase().indexOf(q)>=0||(o.productName||'').toLowerCase().indexOf(q)>=0||(o.customerRegion||'').toLowerCase().indexOf(q)>=0})}
+  return r
+}
+function OP(k){var s={};O.forEach(function(o){var v=o[k];if(v)s[String(v)]=1});return Object.keys(s).sort()}
+function GID(){return'o_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)}
+
+function Make(tag,cls,style){
+  var e=document.createElement(tag);if(cls)e.className=cls;if(style)for(var k in style)e.style[k]=style[k];return e
+}
+function T(el,txt){el.appendChild(document.createTextNode(txt))}
+function BTN(txt,cls,fn){var b=Make('button',cls);T(b,txt);b.onclick=fn;return b}
+
+function RENDER(){
+  RenderToolbar();
+  RenderTable();
+}
+
+function RenderToolbar(){
+  var tb=document.getElementById('tbar'),fl=FL();tb.innerHTML='';
+  // search
+  var sd=Make('div','');sd.style.position='relative';
+  var si=Make('input','');si.type='text';si.placeholder='🔍 搜索...(回车)';si.value=sq;
+  si.onkeydown=function(e){if(e.key=='Enter'){sq=si.value.trim();RENDER()}if(e.key=='Escape'){si.value='';sq='';RENDER()}};
+  if(sq){var cl=Make('button','');cl.style.cssText='position:absolute;right:3px;top:50%;transform:translateY(-50%);border:none;background:#e2e8f0;border-radius:50%;width:18px;height:18px;font-size:10px;line-height:1;padding:0;cursor:pointer';cl.textContent='✕';cl.onclick=function(){si.value='';sq='';RENDER()};sd.appendChild(cl)}
+  sd.appendChild(si);tb.appendChild(sd);
+  tb.appendChild(BTN(sf?'▲ 隐藏筛选':'▼ 列筛选','',function(){sf=!sf;RENDER()}));
+  tb.appendChild(BTN('+ 新增行','blue',function(){addOrder()}));
+  tb.appendChild(BTN('CSV','',function(){exportCSV()}));
+  tb.appendChild(BTN('Excel','',function(){exportExcel()}));
+  tb.appendChild(BTN('📥导入','',function(){importExcel()}));
+  if(si.size>0){
+    tb.appendChild(Make('span','',{fontSize:'12px',color:'#4f46e5'}).appendChild(document.createTextNode(si.size+' 条已选')).parentNode);
+    tb.appendChild(BTN('批量删除','red',function(){if(confirm('删除'+si.size+'条？')){O=O.filter(function(o){return!si.has(o.id)});si=new Set();S();RENDER()}}));
+    var ss=Make('select','');ss.onchange=function(){if(this.value){si.forEach(function(id){var o=O.find(function(x){return x.id==id});if(o)o.salesStatus=this.value});si=new Set();S();RENDER()}};
+    [['','批量改状态'],['已售','已售'],['预售','预售'],['退货','退货'],['待发','待发']].forEach(function(a){var o=document.createElement('option');o.value=a[0];o.textContent=a[1];ss.appendChild(o)});
+    tb.appendChild(ss);
+  }
+  tb.appendChild(Make('span','cnt').appendChild(document.createTextNode('共 '+fl.length+' 条')).parentNode);
+}
+
+function RenderCell(col,val,ri,ev,id,cc){
+  var td=Make('td','');td.style.maxWidth='140px';td.title=val!=null?String(val):'';
+  if(col.k=='_idx'){td.className='tc gr';T(td,ri+1);return td}
+  if(col.t=='c'){var cb=Make('input','');cb.type='checkbox';cb.checked=!!val;cb.onchange=function(){if(col.k=='isReturn'){handleReturn(id,cb.checked)}else{var o=O.find(function(x){return x.id==id});o[col.k]=cb.checked;S();RENDER()}};td.className='tc';td.appendChild(cb);return td}
+  if(col.t=='ro'){var nv=Number(val);td.textContent=C(nv);td.className+=' tr mono '+(col.k=='profit'?(nv>=0?'g':'r'):'');return td}
+  if(col.t=='n'){td.textContent=val?C(Number(val)):'-';td.className+=' tr mono';td.style.cursor='pointer';td.onclick=function(){startEdit(td,col,id,val,'n')};return td}
+  if(col.t=='dt'){td.textContent=val?String(val).replace('T',' '):'-';td.style.cursor='pointer';td.onclick=function(){startEdit(td,col,id,val,'x')};return td}
+  if(col.t=='x'){var c=H(String(val||''));var s=Make('span','pill');T(s,val||'-');s.title=val||'';if(c)s.style.backgroundColor=c;s.onclick=function(e){e.stopPropagation();startEdit(td,col,id,val,'x')};td.appendChild(s);return td}
+  // dropdown
+  var c=col.k=='customerName'?cc:H(String(val||'')),d=Make('div','pdp'),s=Make('span','pill');T(s,val||'-');s.title=val||'';if(c)s.style.backgroundColor=c;s.onclick=function(ev){ev.stopPropagation();startEdit(d,col,id,val,'x')};
+  d.appendChild(s);
+  var ov=OP(col.k);if(ov.length>0){var ar=Make('span','arr');ar.textContent='▼';ar.title='选择已有值';ar.onclick=function(ev){ev.stopPropagation();d.querySelector('.pop')?.remove();showDropdown(d,col.k,id,ov)};d.appendChild(ar)}
+  td.appendChild(d);return td
+}
+
+function showDropdown(container,colKey,rowId,options){
+  var pop=Make('div','pop'),inp=Make('input','');inp.placeholder='搜索...';inp.oninput=function(){var q=inp.value.toLowerCase();pop.querySelectorAll('.lst>div').forEach(function(it){it.style.display=q?(it.textContent.toLowerCase().indexOf(q)>=0?'':'none'):''})};
+  pop.appendChild(inp);
+  var ls=Make('div','lst');options.forEach(function(opt){var it=Make('div','');T(it,opt);it.onmousedown=function(e){e.preventDefault();var o=O.find(function(x){return x.id==rowId});o[colKey]=opt;recalc(rowId);S();RENDER()};ls.appendChild(it)});
+  pop.appendChild(ls);container.appendChild(pop);
+  var ovl=Make('div','ovl');ovl.onmousedown=function(){pop.remove();ovl.remove()};container.appendChild(ovl);
+  setTimeout(function(){inp.focus()},50);
+}
+
+var editingCell=null;
+function startEdit(el,col,id,val,type){
+  if(editingCell)return;editingCell=el;
+  var inp=Make('input','');inp.type=type=='n'?'number':'text';if(type=='n'){inp.value=val||0}else inp.value=val||'';
+  inp.style.cssText='width:100%;min-width:60px;border:1px solid #6366f1;border-radius:4px;padding:2px 4px;font-size:13px;outline:none';
+  el.innerHTML='';el.appendChild(inp);inp.focus();inp.select();
+  function commit(){var nv=type=='n'?parseFloat(inp.value)||0:inp.value;if(nv!==val){O.find(function(x){return x.id==id})[col.k]=nv;recalc(id);S()}editingCell=null;RENDER()}
+  inp.onblur=commit;inp.onkeydown=function(e){if(e.key=='Enter')commit();if(e.key=='Escape'){editingCell=null;RENDER()}}
+}
+
+function recalc(id){var o=O.find(function(x){return x.id==id});if(!o)return;o.profit=P(o);o.returnProfit=RP(o)}
+
+function handleReturn(id,ck){var o=O.find(function(x){return x.id==id});if(!o)return;if(ck){o.returnPackagingCost=Number(o.packagingShipping)||0;o.packagingShipping=0;o.returnPurchasePrice=Number(o.purchasePrice)||0;o.purchasePrice=0;o.returnSellingPrice=Number(o.sellingPrice)||0;o.sellingPrice=0;o.actualRefund=Number(o.actualPayment)||0;o.actualPayment=0;o.salesStatus=''}else{o.packagingShipping=Number(o.returnPackagingCost)||0;o.returnPackagingCost=0;o.purchasePrice=Number(o.returnPurchasePrice)||0;o.returnPurchasePrice=0;o.sellingPrice=Number(o.returnSellingPrice)||0;o.returnSellingPrice=0;o.actualPayment=Number(o.actualRefund)||0;o.actualRefund=0}o.isReturn=ck;recalc(id);S();RENDER()}
+
+function RenderTable(){
+  var fl=FL(),wrap=document.getElementById('twrap');wrap.innerHTML='';
+  // left table
+  var ld=Make('div','');ld.id='left';
+  var lt=Make('table',''),lh=Make('thead',''),lhr=Make('tr','');
+  // select all checkbox
+  var cth=Make('th','tc');cth.style.width='36px';var ca=Make('input','');ca.type='checkbox';ca.onchange=function(){if(ca.checked)fl.forEach(function(o){si.add(o.id)});else si=new Set();RENDER()};cth.appendChild(ca);lhr.appendChild(cth);
+  FC.forEach(function(c){var th=Make('th','');T(th,c.l+(sk==c.k?(sd=='asc'?' ▲':' ▼'):''));th.onclick=function(){sk=sk==c.k?(sd=='asc'?'desc':'asc'):c.k;sd=sk==c.k?sd:'asc';RENDER()};lhr.appendChild(th)});
+  lh.appendChild(lhr);
+  if(sf){var fr=Make('tr','');fr.appendChild(Make('th',''));FC.forEach(function(c){var th=Make('th','');if(c.k=='_idx'){fr.appendChild(th);return}var ov=OP(c.k);if(ov.length>0){var s=Make('select','');s.style.cssText='width:100%;font-size:11px';s.onchange=function(){ft[c.k]=this.value;RENDER()};s.appendChild(function(){var o=document.createElement('option');o.value='';o.textContent='全部';return o}());ov.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o)});th.appendChild(s)}else{var ip=Make('input','');ip.style.cssText='width:100%;font-size:11px';ip.placeholder='筛选';ip.oninput=function(){ft[c.k]=this.value;RENDER()};th.appendChild(ip)}fr.appendChild(th)});lh.appendChild(fr)}
+  lt.appendChild(lh);
+  var lb=Make('tbody','');fl.forEach(function(o,i){var ev=i%2==1,cc=H(o.customerName||''),tr=Make('tr',ev?'z':'');var ctd=Make('td','tc');var cb=Make('input','');cb.type='checkbox';cb.checked=si.has(o.id);cb.onchange=function(){if(cb.checked)si.add(o.id);else si.delete(o.id);RENDER()};ctd.appendChild(cb);tr.appendChild(ctd);FC.forEach(function(c){tr.appendChild(RenderCell(c,o[c.k],i,ev,o.id,cc))});lb.appendChild(tr)});
+  lt.appendChild(lb);ld.appendChild(lt);
+  // right table
+  var rd=Make('div','');rd.id='right';var rt=Make('table',''),rh=Make('thead',''),rhr=Make('tr','');
+  SC.forEach(function(c){var th=Make('th','');T(th,c.l+(sk==c.k?(sd=='asc'?' ▲':' ▼'):''));th.onclick=function(){sk=sk==c.k?(sd=='asc'?'desc':'asc'):c.k;sd=sk==c.k?sd:'asc';RENDER()};rhr.appendChild(th)});
+  var ath=Make('th','');T(ath,'操作');rhr.appendChild(ath);rh.appendChild(rhr);
+  if(sf){var fr2=Make('tr','');SC.forEach(function(c){var th=Make('th','');if(c.t=='c'){var sel=Make('select','');sel.style.cssText='width:100%;font-size:11px';sel.onchange=function(){ft[c.k]=this.value;RENDER()};[['','全部'],['是','是'],['否','否']].forEach(function(a){var o=document.createElement('option');o.value=a[0];o.textContent=a[1];sel.appendChild(o)});th.appendChild(sel)}else{var ov=OP(c.k);if(ov.length>0){var sel=Make('select','');sel.style.cssText='width:100%;font-size:11px';sel.onchange=function(){ft[c.k]=this.value;RENDER()};sel.appendChild(function(){var o=document.createElement('option');o.value='';o.textContent='全部';return o}());ov.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o)});th.appendChild(sel)}else{var ip=Make('input','');ip.style.cssText='width:100%;font-size:11px';ip.placeholder='筛选';ip.oninput=function(){ft[c.k]=this.value;RENDER()};th.appendChild(ip)}}fr2.appendChild(th)});fr2.appendChild(Make('th',''));rh.appendChild(fr2)}
+  rt.appendChild(rh);
+  var rb=Make('tbody','');fl.forEach(function(o,i){var ev=i%2==1,cc=H(o.customerName||''),tr=Make('tr',ev?'z':'');SC.forEach(function(c){tr.appendChild(RenderCell(c,o[c.k],i,ev,o.id,cc))});var dtd=Make('td','tc');var db=Make('button','');db.style.cssText='border:none;background:none;cursor:pointer;color:#ef4444;font-size:14px';db.textContent='🗑';db.onclick=function(){if(confirm('确定删除？')){O=O.filter(function(x){return x.id!=o.id});S();RENDER()}};dtd.appendChild(db);tr.appendChild(dtd);rb.appendChild(tr)});
+  rt.appendChild(rb);rd.appendChild(rt);wrap.appendChild(ld);wrap.appendChild(rd);setTimeout(function(){var lr=document.getElementById('left').querySelectorAll('tbody tr'),rr=document.getElementById('right').querySelectorAll('tbody tr'),n=Math.min(lr.length,rr.length);for(var i=0;i<n;i++){var lh=lr[i].getBoundingClientRect().height,rh=rr[i].getBoundingClientRect().height,mh=Math.max(lh,rh);lr[i].style.height=mh+'px';rr[i].style.height=mh+'px';}},50);
+}
+
+function addOrder(){var o={id:GID(),customerName:'新客户',productName:'',customerRegion:'',customerAddress:'',productStatus:'',upstreamContact:'',priorityShipping:false,isReturn:false,salesStatus:'',packagingShipping:0,purchasePrice:0,sellingPrice:0,actualPayment:0,returnPackagingCost:0,returnPurchasePrice:0,returnSellingPrice:0,actualRefund:0,returnProfit:0,profit:0,ironFanBenefit:'',diamondFanBenefit:'',loyalFanBenefit:'',superFanBenefit:'',startDate:'',completionDate:'',remark:''};O.unshift(o);S();RENDER()}
+
+function exportCSV(){var fl=FL(),hds=CS.map(function(c){return c.l});var csv=['"'+hds.join('","')+'"'].concat(fl.map(function(o){var sv=function(v){var s=String(v||'');if(/^[=+\-@]/.test(s))s="'"+s;return s.replace(/"/g,'""')};return'"'+CS.map(function(c){return sv(o[c.k])}).join('","')+'"'})).join('\n');var b=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='orders.csv';a.click()}
+function exportExcel(){if(typeof XLSX=='undefined'){alert('Excel功能加载中，请稍后再试');return}var fl=FL();var rows=fl.map(function(o){var r={};CS.forEach(function(c){r[c.l]=o[c.k]||''});return r});var ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'订单');XLSX.writeFile(wb,'orders.xlsx')}
+function importExcel(){if(typeof XLSX=='undefined'){alert('Excel功能加载中，请稍后再试');return}var inp=document.createElement('input');inp.type='file';inp.accept='.xlsx,.xls,.csv';inp.onchange=async function(){var f=this.files[0];if(!f)return;var data=await f.arrayBuffer();var wb=XLSX.read(data);var sh=wb.Sheets[wb.SheetNames[0]];var rows=XLSX.utils.sheet_to_json(sh);var REV={};CS.forEach(function(c){REV[c.l]=c.k});var n=0;rows.forEach(function(r){var o={id:GID(),customerName:'',productName:''};for(var cn in REV){var k=REV[cn];if(r[cn]!==undefined&&r[cn]!=='')o[k]=r[cn]}o.profit=P(o);o.returnProfit=RP(o);O.unshift(o);n++});S();RENDER();alert('导入 '+n+' 条')};inp.click()}
+
+function showDash(){
+  document.getElementById('vp').classList.add('hide');document.getElementById('vd').classList.remove('hide');
+  document.getElementById('ntab').classList.remove('on');document.getElementById('ndsh').classList.add('on');
+  var fl=FL(),div=document.getElementById('dash'),t={packagingShipping:0,purchasePrice:0,sellingPrice:0,actualPayment:0,actualRefund:0,profit:0,returnProfit:0},sc={},ps=[];
+  fl.forEach(function(o){t.packagingShipping+=o.packagingShipping;t.purchasePrice+=o.purchasePrice;t.sellingPrice+=o.sellingPrice;t.actualPayment+=o.actualPayment;t.actualRefund+=o.actualRefund;t.profit+=o.profit;t.returnProfit+=o.returnProfit;var s=o.salesStatus||'未分类';sc[s]=(sc[s]||0)+1;if((o.salesStatus||'').indexOf('预售')>=0||(o.productStatus||'').indexOf('预售')>=0)ps.push(o)});
+  div.innerHTML='';
+  var h1=Make('h1','dh1');T(h1,'📊 仪表盘');div.appendChild(h1);
+  var kg=Make('div','dkp');
+  [{l:'包装快递费',v:t.packagingShipping},{l:'进价总和',v:t.purchasePrice},{l:'卖价总和',v:t.sellingPrice},{l:'实付总和',v:t.actualPayment},{l:'实退总和',v:t.actualRefund,cr:'r'},{l:'退货利润',v:t.returnProfit},{l:'利润总和',v:t.profit,cr:t.profit>=0?'g':'r'}].forEach(function(k){var c=Make('div','dkc');var lb=Make('div','lbl');T(lb,k.l);c.appendChild(lb);var vl=Make('div','val');if(k.cr)vl.className='val '+k.cr;T(vl,C(k.v));c.appendChild(vl);kg.appendChild(c)});
+  div.appendChild(kg);
+  var dg=Make('div','dg');
+  var scd=Make('div','dc');var h3=Make('h3','');T(h3,'售卖状态分布');scd.appendChild(h3);var mx=Math.max(1,Object.values(sc).reduce(function(a,b){return a+b},0)==0?1:Math.max.apply(null,Object.values(sc)));
+  Object.entries(sc).sort(function(a,b){return b[1]-a[1]}).forEach(function(e){var bw=Make('div','br');var bl=Make('div','brl');T(bl,e[0]+'  '+e[1]+' 单');bw.appendChild(bl);var bt=Make('div','brt');var bf=Make('div','brf');bf.style.width=(e[1]/mx*100)+'%';if(e[1]/mx>0.3){var sp=Make('span','');T(sp,(e[1]/fl.length*100).toFixed(0)+'%');bf.appendChild(sp)}bt.appendChild(bf);bw.appendChild(bt);scd.appendChild(bw)});
+  if(!Object.keys(sc).length)scd.appendChild(Make('div','emp').appendChild(document.createTextNode('暂无数据')).parentNode);dg.appendChild(scd);
+  var pcd=Make('div','dc');var ph3=Make('h3','');T(ph3,'预售看板 ('+ps.length+')');pcd.appendChild(ph3);if(!ps.length)pcd.appendChild(Make('div','emp').appendChild(document.createTextNode('暂无预售')).parentNode);else ps.forEach(function(o){var it=Make('div','psi');T(it,o.customerName+' · '+o.productName);var sp=Make('span','');sp.style.cssText='font-weight:600;color:#6366f1';T(sp,C(o.sellingPrice));it.appendChild(sp);pcd.appendChild(it)});dg.appendChild(pcd);
+  div.appendChild(dg);div.appendChild(Make('div','').appendChild(document.createTextNode('共 '+fl.length+' 条订单')).parentNode);
+}
+
+function showTable(){
+  document.getElementById('vp').classList.remove('hide');document.getElementById('vd').classList.add('hide');
+  document.getElementById('ntab').classList.add('on');document.getElementById('ndsh').classList.remove('on');RENDER();
+}
+
+document.getElementById('ntab').onclick=function(e){e.preventDefault();showTable()};
+document.getElementById('ndsh').onclick=function(e){e.preventDefault();showDash()};
+si=new Set();console.log('订单追踪系统 v2 已就绪, '+O.length+' 条订单');RENDER();
+</script></body></html>
