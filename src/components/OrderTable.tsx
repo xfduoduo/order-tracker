@@ -168,23 +168,35 @@ export default function OrderTable() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // 同步左右两栏行高
+  // 同步左右两栏：行高 + 原生 scroll 事件绑定（更跟手）
   useEffect(() => {
     if (loading) return;
-    const id = requestAnimationFrame(() => {
-      const leftRows = document.querySelectorAll("#left-panel tbody tr");
-      const rightRows = document.querySelectorAll("#right-panel tbody tr");
-      const n = Math.min(leftRows.length, rightRows.length);
-      if (n === 0) return;
+    const left = document.getElementById("left-panel");
+    const right = document.getElementById("right-panel");
+    if (!left || !right) return;
+
+    // 行高同步
+    const syncHeights = () => {
+      const lRows = left.querySelectorAll("tbody tr");
+      const rRows = right.querySelectorAll("tbody tr");
+      const n = Math.min(lRows.length, rRows.length);
       for (let i = 0; i < n; i++) {
-        const lh = (leftRows[i] as HTMLElement).offsetHeight;
-        const rh = (rightRows[i] as HTMLElement).offsetHeight;
+        const lh = (lRows[i] as HTMLElement).offsetHeight;
+        const rh = (rRows[i] as HTMLElement).offsetHeight;
         const mh = Math.max(lh, rh);
-        (leftRows[i] as HTMLElement).style.height = mh + "px";
-        (rightRows[i] as HTMLElement).style.height = mh + "px";
+        (lRows[i] as HTMLElement).style.height = mh + "px";
+        (rRows[i] as HTMLElement).style.height = mh + "px";
       }
-    });
-    return () => cancelAnimationFrame(id);
+    };
+
+    // 原生 scroll 同步（比 React onScroll 更快）
+    const onScroll = () => { left.scrollTop = right.scrollTop; };
+    right.addEventListener("scroll", onScroll, { passive: true });
+    syncHeights();
+
+    return () => {
+      right.removeEventListener("scroll", onScroll);
+    };
   }, [orders, loading, showFilters, filters, searchQuery]);
 
   const setFilter = (key: string, value: string) => {
