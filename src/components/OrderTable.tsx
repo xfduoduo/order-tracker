@@ -169,38 +169,6 @@ export default function OrderTable() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // 同步左右两栏滚动位置 + 行高
-  useEffect(() => {
-    if (loading) return;
-    const timer = setTimeout(() => {
-      const leftDiv = document.getElementById("left-panel") as HTMLElement | null;
-      const rightDiv = document.getElementById("right-panel") as HTMLElement | null;
-      if (!leftDiv || !rightDiv) return;
-      // 同步行高
-      const lRows = leftDiv.querySelectorAll("tbody tr");
-      const rRows = rightDiv.querySelectorAll("tbody tr");
-      const n = Math.min(lRows.length, rRows.length);
-      for (let i = 0; i < n; i++) {
-        const lh = (lRows[i] as HTMLElement).getBoundingClientRect().height;
-        const rh = (rRows[i] as HTMLElement).getBoundingClientRect().height;
-        const mh = Math.max(lh, rh);
-        (lRows[i] as HTMLElement).style.height = mh + "px";
-        (rRows[i] as HTMLElement).style.height = mh + "px";
-      }
-      // 双向同步滚动
-      let syncing = false;
-      const syncScroll = (source: HTMLElement, target: HTMLElement) => {
-        if (syncing) return;
-        syncing = true;
-        target.scrollTop = source.scrollTop;
-        syncing = false;
-      };
-      leftDiv.onscroll = () => syncScroll(leftDiv, rightDiv);
-      rightDiv.onscroll = () => syncScroll(rightDiv, leftDiv);
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [orders, loading, filters, searchQuery, showFilters, selectedIds]);
-
   const setFilter = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
@@ -470,9 +438,9 @@ export default function OrderTable() {
         <span className="ml-auto text-xs text-gray-500">共 {filteredOrders.length} 条</span>
       </div>
 
-      <div className="flex max-h-[calc(100vh-200px)] border border-gray-300 rounded">
+      <div className="flex overflow-y-auto max-h-[calc(100vh-200px)] border border-gray-300 rounded">
         {/* 冻结列：复选框 + 序号 + 客户名称 + 地区 + 货品名称 */}
-        <div id="left-panel" className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10 overflow-hidden">
+        <div id="left-panel" className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10">
           <table id="left-table" className="border-collapse">
             <thead>
               <tr>
