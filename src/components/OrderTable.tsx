@@ -475,7 +475,7 @@ export default function OrderTable() {
                 const isFrozen = FROZEN_KEYS.includes(col.key) || col.key === "_index";
                 const lastFrozen = col.key === "productName";
                 return (
-                  <th key={col.key} className={`${HEADER_CLASS} ${isFrozen ? "sticky z-30 bg-gray-100" : ""} ${lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : ""}`}
+                  <th key={col.key} className={`${HEADER_CLASS} ${isFrozen ? "sticky z-30 bg-gray-100" : ""} ${lastFrozen ? "border-r-2 border-r-gray-300" : ""}`}
                     style={isFrozen ? {position:"sticky",zIndex:30} : {}}
                     data-frozen={isFrozen ? "1" : undefined}
                     onClick={() => toggleSort(col.key)}>
@@ -494,7 +494,7 @@ export default function OrderTable() {
                   const isFrozen = FROZEN_KEYS.includes(col.key) || col.key === "_index";
                   const lastFrozen = col.key === "productName";
                   return (
-                    <th key={col.key} className={`border border-gray-200 bg-gray-50 px-1 py-1 ${isFrozen ? "sticky z-30 bg-gray-50" : ""} ${lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : ""}`}
+                    <th key={col.key} className={`border border-gray-200 bg-gray-50 px-1 py-1 ${isFrozen ? "sticky z-30 bg-gray-50" : ""} ${lastFrozen ? "border-r-2 border-r-gray-300" : ""}`}
                       style={isFrozen ? {position:"sticky",zIndex:30} : {}}
                       data-frozen={isFrozen ? "1" : undefined}>
                       {boolColsCheck.has(col.key) ? (
@@ -538,15 +538,16 @@ export default function OrderTable() {
                       const isDropdownCol = colType === "dropdown";
                       const cellBgColor = isCustomerName ? custColor : (isDropdownCol && rawVal) ? nameToColor(String(rawVal)) : "transparent";
                       const frozenClass = isFrozen ? `sticky ${isEvenBg} z-10` : "";
-                      const shadowClass = lastFrozen ? "shadow-[2px_0_6px_rgba(0,0,0,0.1)]" : "";
-                      if (col.key === "_index") return <td key={col.key} data-frozen="1" className={`${CELL_CLASS} text-center text-gray-400 text-xs font-mono sticky ${isEvenBg} z-10`} style={{position:"sticky",zIndex:10}}>{rowIdx + 1}</td>;
+                      const shadowClass = lastFrozen ? "border-r-2 border-gray-300" : "";
+                      if (col.key === "_index") return <td key={col.key} data-frozen="1" className={`${CELL_CLASS} text-center text-gray-400 text-xs font-mono sticky ${isEvenBg} z-10 ${lastFrozen ? "border-r-2 border-gray-300" : ""}`} style={{position:"sticky",zIndex:10}}>{rowIdx + 1}</td>;
                       if (colType === "checkbox") return <td key={col.key} className={`${CELL_CLASS} text-center`}><input type="checkbox" checked={!!rawVal} onChange={(e) => { if (col.key === "isReturn") handleReturnToggle(o.id, e.target.checked); else { const tag = "优先发货顺丰加20"; const oldRemark = String(o.remark || ""); const c = e.target.checked; const nr = c ? (oldRemark.includes(tag) ? oldRemark : oldRemark ? oldRemark + "；" + tag : tag) : oldRemark.replace("；" + tag, "").replace(tag, "").trim().replace(/^；|；$/g, ""); const ps = ++reqSeq.current; setOrders((prev) => prev.map((x) => x.id === o.id ? { ...x, priorityShipping: c, remark: nr } : x)); fetch(`/api/orders/${o.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ priorityShipping: c, remark: nr }) }).then((r) => r.json()).then((json) => { if (json.success && json.data && ps === reqSeq.current) setOrders((prev) => prev.map((x) => x.id === o.id ? json.data! : x)); }); } }} className="h-4 w-4" /></td>;
                       if (colType === "readonly" && (col.key === "profit" || col.key === "returnProfit")) {
+                        const readonlyFrozen = `${frozenClass} ${shadowClass}`;
                         const isGreen = col.key === "profit" && Number(rawVal) >= 0, isRed = col.key === "profit" && Number(rawVal) < 0;
-                        return <td key={col.key} className={`${CELL_CLASS} text-right font-mono text-sm ${isGreen ? "text-green-700 font-bold" : isRed ? "text-red-500 font-bold" : "text-gray-500"}`}>{fmtCNY(Number(rawVal))}</td>;
+                        return <td key={col.key} data-frozen={isFrozen ? "1" : undefined} style={isFrozen ? {position:"sticky",zIndex:10} : {}} className={`${CELL_CLASS} text-right font-mono text-sm ${readonlyFrozen} ${isGreen ? "text-green-700 font-bold" : isRed ? "text-red-500 font-bold" : "text-gray-500"}`}>{fmtCNY(Number(rawVal))}</td>;
                       }
-                      if (colType === "number") return <td key={col.key} className={`${CELL_CLASS} text-right`}><EditableNumber value={Number(rawVal)} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
-                      if (colType === "datetime" || colType === "date") return <td key={col.key} className={CELL_CLASS}><EditableDate value={String(rawVal ?? "")} type={colType} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
+                      if (colType === "number") return <td key={col.key} className={`${CELL_CLASS} text-right ${frozenClass} ${shadowClass}`} data-frozen={isFrozen ? "1" : undefined} style={isFrozen ? {position:"sticky",zIndex:10} : {}}><EditableNumber value={Number(rawVal)} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
+                      if (colType === "datetime" || colType === "date") return <td key={col.key} data-frozen={isFrozen ? "1" : undefined} style={isFrozen ? {position:"sticky",zIndex:10} : {}} className={`${CELL_CLASS} ${frozenClass} ${shadowClass}`}><EditableDate value={String(rawVal ?? "")} type={colType} onSave={(v) => updateCell(o.id, col.key, v)} /></td>;
                       if (colType === "dropdown" && dropdownOpts?.size) return (
                         <td key={col.key} className={`${CELL_CLASS} group ${frozenClass} ${shadowClass}`} data-frozen={isFrozen ? "1" : undefined} style={isFrozen ? {position:"sticky",zIndex:10} : {}}>
                           <DropdownCell value={String(rawVal)} options={[...dropdownOpts]} color={cellBgColor} onSave={(v) => { updateCell(o.id, col.key, v); addDropdownOption(col.key, v); }} onRemoveOption={(v) => removeDropdownOption(col.key, v)} />
