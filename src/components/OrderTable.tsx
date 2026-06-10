@@ -169,12 +169,16 @@ export default function OrderTable() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
 
-  // 同步左右两栏行高
+  // 同步左右两栏滚动位置 + 行高
   useEffect(() => {
     if (loading) return;
     const timer = setTimeout(() => {
-      const lRows = document.querySelectorAll("#left-table tbody tr");
-      const rRows = document.querySelectorAll("#right-table tbody tr");
+      const leftDiv = document.getElementById("left-panel") as HTMLElement | null;
+      const rightDiv = document.getElementById("right-panel") as HTMLElement | null;
+      if (!leftDiv || !rightDiv) return;
+      // 同步行高
+      const lRows = leftDiv.querySelectorAll("tbody tr");
+      const rRows = rightDiv.querySelectorAll("tbody tr");
       const n = Math.min(lRows.length, rRows.length);
       for (let i = 0; i < n; i++) {
         const lh = (lRows[i] as HTMLElement).getBoundingClientRect().height;
@@ -183,7 +187,17 @@ export default function OrderTable() {
         (lRows[i] as HTMLElement).style.height = mh + "px";
         (rRows[i] as HTMLElement).style.height = mh + "px";
       }
-    }, 100);
+      // 双向同步滚动
+      let syncing = false;
+      const syncScroll = (source: HTMLElement, target: HTMLElement) => {
+        if (syncing) return;
+        syncing = true;
+        target.scrollTop = source.scrollTop;
+        syncing = false;
+      };
+      leftDiv.onscroll = () => syncScroll(leftDiv, rightDiv);
+      rightDiv.onscroll = () => syncScroll(rightDiv, leftDiv);
+    }, 150);
     return () => clearTimeout(timer);
   }, [orders, loading, filters, searchQuery, showFilters, selectedIds]);
 
@@ -456,9 +470,9 @@ export default function OrderTable() {
         <span className="ml-auto text-xs text-gray-500">共 {filteredOrders.length} 条</span>
       </div>
 
-      <div className="flex overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)] border border-gray-300 rounded">
+      <div className="flex max-h-[calc(100vh-200px)] border border-gray-300 rounded">
         {/* 冻结列：复选框 + 序号 + 客户名称 + 地区 + 货品名称 */}
-        <div className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10">
+        <div id="left-panel" className="shrink-0 border-r-2 border-gray-300 shadow-[3px_0_8px_rgba(0,0,0,0.1)] z-10 overflow-y-auto overflow-x-hidden" style={{scrollbarWidth:"none"}}>
           <table id="left-table" className="border-collapse">
             <thead>
               <tr>
@@ -526,7 +540,7 @@ export default function OrderTable() {
           </table>
         </div>
         {/* 滚动列：产品状态 + 上游对接 + ... + 操作 */}
-        <div className="flex-1 overflow-x-auto">
+        <div id="right-panel" className="flex-1 overflow-auto">
           <table id="right-table" className="border-collapse min-w-max">
             <thead>
               <tr>
