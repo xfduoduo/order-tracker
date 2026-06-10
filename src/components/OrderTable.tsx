@@ -174,7 +174,7 @@ export default function OrderTable() {
     // 测量第一行每个冻结 th 的宽度，计算累积偏移
     const frozenThs = container.querySelectorAll("th[data-frozen]");
     const offsets: number[] = [];
-    let left = 36; // checkbox 宽度
+    let left = 38; // checkbox 宽度
     frozenThs.forEach((th) => {
       offsets.push(left);
       left += (th as HTMLElement).offsetWidth;
@@ -468,7 +468,7 @@ export default function OrderTable() {
         <table className="border-collapse" style={{borderSpacing:0}}>
           <thead>
             <tr>
-              <th className={HEADER_CLASS + " sticky left-0 z-30 bg-gray-100"} style={{width:36,minWidth:36}}>
+              <th className={HEADER_CLASS + " sticky left-0 z-30 bg-gray-100"} style={{width:38,minWidth:38}}>
                 <input type="checkbox" checked={selectedIds.size === filteredOrders.length && filteredOrders.length > 0} onChange={toggleSelectAll} className="h-4 w-4" />
               </th>
               {COLUMNS.map((col) => {
@@ -487,7 +487,7 @@ export default function OrderTable() {
             </tr>
             {showFilters && (
               <tr>
-                <th className="border border-gray-200 bg-gray-50 px-1 py-1 sticky left-0 z-30" style={{width:36,minWidth:36}} />
+                <th className="border border-gray-200 bg-gray-50 px-1 py-1 sticky left-0 z-30" style={{width:38,minWidth:38}} />
                 {COLUMNS.map((col) => {
                   const boolColsCheck = new Set(["priorityShipping", "isReturn"]);
                   const opts = dropdownValues[col.key];
