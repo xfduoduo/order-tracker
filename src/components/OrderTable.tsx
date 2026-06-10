@@ -468,7 +468,7 @@ export default function OrderTable() {
         <table className="border-collapse" style={{borderSpacing:0}}>
           <thead>
             <tr>
-              <th className={HEADER_CLASS + " sticky left-0 z-30 bg-gray-100"} style={{width:38,minWidth:38}}>
+              <th className={HEADER_CLASS + " sticky left-0 z-30 bg-gray-100 border-r-0"} style={{width:38,minWidth:38}}>
                 <input type="checkbox" checked={selectedIds.size === filteredOrders.length && filteredOrders.length > 0} onChange={toggleSelectAll} className="h-4 w-4" />
               </th>
               {COLUMNS.map((col) => {
@@ -525,7 +525,7 @@ export default function OrderTable() {
                 const isEvenBg = isEven ? "bg-white" : "bg-indigo-50";
                 return (
                   <tr key={o.id} className={`${isEvenBg} hover:bg-indigo-100/60 transition-colors duration-150`}>
-                    <td className={`${CELL_CLASS} text-center sticky left-0 ${isEvenBg} z-10`} style={{transform:"translateZ(0)",boxShadow:"1px 0 0 0 "+(isEvenBg==="bg-white"?"#fff":"#eef2ff")}}>
+                    <td className={`${CELL_CLASS} text-center sticky left-0 ${isEvenBg} z-10 border-r-0`} style={{transform:"translateZ(0)",boxShadow:"1px 0 0 0 "+(isEvenBg==="bg-white"?"#fff":"#eef2ff")}}>
                       <input type="checkbox" checked={selectedIds.has(o.id)} onChange={() => toggleSelect(o.id)} className="h-4 w-4" />
                     </td>
                     {COLUMNS.map((col) => {
