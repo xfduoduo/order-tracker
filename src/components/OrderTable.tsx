@@ -197,6 +197,16 @@ export default function OrderTable() {
     // 原生 scroll 同步（比 React onScroll 更快）
     const onScroll = () => { left.scrollTop = right.scrollTop; };
     right.addEventListener("scroll", onScroll, { passive: true });
+    // 同步表头高度（消除初始偏移）
+    const lThead = left.querySelector("thead");
+    const rThead = right.querySelector("thead");
+    if (lThead && rThead) {
+      const lh = lThead.getBoundingClientRect().height;
+      const rh = rThead.getBoundingClientRect().height;
+      const mh = Math.max(lh, rh);
+      (lThead as HTMLElement).style.height = mh + "px";
+      (rThead as HTMLElement).style.height = mh + "px";
+    }
     syncHeights();
 
     return () => {
