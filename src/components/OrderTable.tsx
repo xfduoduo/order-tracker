@@ -172,7 +172,7 @@ export default function OrderTable() {
     const container = document.getElementById("main-scroll");
     if (!container) return;
     // 测量第一行每个冻结 th 的宽度，计算累积偏移
-    const frozenThs = container.querySelectorAll("th[data-frozen]");
+    const frozenThs = container.querySelectorAll("thead tr:first-child th[data-frozen]");
     const offsets: number[] = [];
     let left = 38; // checkbox 宽度
     frozenThs.forEach((th) => {
